@@ -1,0 +1,20 @@
+*.o
+*.xcl
+*.obj
+*.elf
+*.map
+*.pbi
+*.dep
+*.log
+*.exe
+*.ilk
+*.pdb
+*.sqlite
+*.crf
+*.d
+*.htm
+*.axf
+*.Maher MASTOURI
+/Project/Oscilloscope/Firmware/MDK-ARM/Firmware 
+/Project/Oscilloscope/Graphic/build 
+

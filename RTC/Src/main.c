@@ -19,6 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "lcd.h"   
+#include "rtc.h"  
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -27,7 +29,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+uint8_t mode_setting = 0, change_set_ready = 1, apply_set_ready = 0;
+uint8_t button_state, last_button_state = 0, debounce_time;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -40,16 +43,15 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-RTC_HandleTypeDef hrtc;
-
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_RTC_Init(void);
+static void SystemClock_Config(void);
+static void Error_Handler(void);
+static void Refresh_Time(uint8_t state);
+static void process_event (uint32_t setting);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -65,43 +67,156 @@ static void MX_RTC_Init(void);
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  uint32_t tick_lcd, tick_button_press, tick_button_unpress;    
+  
+  /* Init HAL Library */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
+  
+  __HAL_RCC_PWR_CLK_ENABLE();
+  
+  /* Configure the system clock to 100 MHz */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_RTC_Init();
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+  
+  /* Init RTC */
+  RTC_Init();
+  
+  /* Set_Init Time */
+  //RTC_SetTime(HOUR_S, MIN_S);
+  
+  /* Init LCD*/
+  LCD_Init();
+  
+  /* Init key user */
+  BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_GPIO);
+  
+  /* get start tick */
+  tick_lcd = HAL_GetTick();    
+  
   while (1)
-  {
-    /* USER CODE END WHILE */
+  { 
+    if(HAL_GetTick() - tick_lcd > 500)
+    {
+      tick_lcd = HAL_GetTick();  
+      Refresh_Time(mode_setting);
+    }
 
-    /* USER CODE BEGIN 3 */
+    
+    /* debounce button */ 
+    uint8_t  read = 1 - BSP_PB_GetState(BUTTON_KEY); // invert 1 : press / 0 : unpress
+    
+    if (read != last_button_state)
+    {
+      debounce_time = HAL_GetTick() ;
+      last_button_state = read;
+    }
+    
+    if(HAL_GetTick() - debounce_time > 100)
+    {
+      button_state = read ;
+    }
+
+    /* handle events */
+    if(button_state)
+    {
+      tick_button_unpress = HAL_GetTick();
+      
+      if(change_set_ready == 0)
+      {
+        if(HAL_GetTick() - tick_button_press > 700)
+        {
+          apply_set_ready = 0;
+          change_set_ready = 1;
+          if(++mode_setting > 2)
+          {
+            mode_setting = 0;
+          }
+        }
+        else
+        {
+          apply_set_ready = 1;
+        }
+      }
+    }
+    else
+    {
+      tick_button_press = HAL_GetTick();
+      
+      if(HAL_GetTick() - tick_button_unpress > 100)
+      {           
+        if(apply_set_ready)
+        {
+          process_event(mode_setting);   
+          apply_set_ready = 0; 
+        }
+      }
+      change_set_ready = 0; 
+    }
   }
-  /* USER CODE END 3 */
 }
+
+/**
+  * @brief  process events
+  * @param  None
+  * @retval None
+  */
+static void process_event (uint32_t setting)
+{
+  uint8_t m , h;
+  
+  if(setting > 0)
+  {
+    RTC_GetTime(&h, &m);
+    
+    if(setting == 1)
+    {
+      h = ( h + 1) % 24;
+    }
+    else if( setting == 2)
+    {
+      m = ( m + 1) % 60;
+    }
+    
+    RTC_SetTime(h, m);  
+  }
+  
+}
+/**
+  * @brief  Display time
+  * @param  None
+  * @retval None
+  */
+static void Refresh_Time (uint8_t state)
+{
+  static uint8_t colon = 0;
+  uint8_t m , h;
+ 
+  RTC_GetTime(&h, &m);
+  colon = 1- colon;
+  
+  LCD_PrintTime(h, m, 1);    
+  
+  if(state == 1 )//Hour
+  {
+    LCD_ControlDigit(0, colon);
+    LCD_ControlDigit(1, colon);
+    
+  }
+  else if(state == 2)
+  {
+    LCD_ControlDigit(2, colon);
+    LCD_ControlDigit(3, colon);
+  }
+  else
+  {
+    LCD_ControlDigit(0, 1);
+    LCD_ControlDigit(1, 1);
+    LCD_ControlDigit(2, 1);
+    LCD_ControlDigit(3, 1);
+  }
+  LCD_PrintTime(h, m, colon);
+}
+
+
 
 /**
   * @brief System Clock Configuration
@@ -153,57 +268,7 @@ void SystemClock_Config(void)
   HAL_RCCEx_EnableMSIPLLMode();
 }
 
-/**
-  * @brief RTC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_RTC_Init(void)
-{
 
-  /* USER CODE BEGIN RTC_Init 0 */
-
-  /* USER CODE END RTC_Init 0 */
-
-  /* USER CODE BEGIN RTC_Init 1 */
-
-  /* USER CODE END RTC_Init 1 */
-  /** Initialize RTC Only
-  */
-  hrtc.Instance = RTC;
-  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 127;
-  hrtc.Init.SynchPrediv = 255;
-  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
-  hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
-  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
-  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-  if (HAL_RTC_Init(&hrtc) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN RTC_Init 2 */
-
-  /* USER CODE END RTC_Init 2 */
-
-}
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-
-}
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.
