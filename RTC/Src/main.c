@@ -199,7 +199,11 @@ static void process_event (uint32_t setting)
   */
 static void Refresh_vbat (void)
 {
-   LCD_PrintNumber(((VBAT_GetVoltage() * 3) * 3300) / 4096);
+  LCD_ControlDigit(0, 1);
+  LCD_ControlDigit(1, 1);
+  LCD_ControlDigit(2, 1);
+  LCD_ControlDigit(3, 1);
+  LCD_PrintNumber(((VBAT_GetVoltage() * 3) * 3300) / 4096);
 }
 /**
   * @brief  Display time

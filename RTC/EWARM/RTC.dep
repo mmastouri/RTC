@@ -607,6 +607,10 @@
             <name>$PROJ_DIR$\..\Src\main.c</name>
             <outputs>
                 <tool>
+                    <name>ICCARM</name>
+                    <file> 115</file>
+                </tool>
+                <tool>
                     <name>BICOMP</name>
                     <file> 48</file>
                 </tool>
