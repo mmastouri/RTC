@@ -51,6 +51,8 @@ void RTC_Init(void);
 void RTC_SetTime(uint8_t hour, uint8_t min);
 void RTC_GetTime(uint8_t *hour, uint8_t *min);
 
+void VBAT_Init(void);
+uint32_t VBAT_GetVoltage(void);
 #endif /* __RTC_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

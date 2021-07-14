@@ -31,7 +31,6 @@
 /* USER CODE BEGIN PTD */
 uint8_t mode_setting = 0, change_set_ready = 1, apply_set_ready = 0;
 uint8_t button_state, last_button_state = 0, debounce_time;
-/* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
@@ -51,6 +50,7 @@ uint8_t button_state, last_button_state = 0, debounce_time;
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void Refresh_Time(uint8_t state);
+static void Refresh_vbat (void);
 static void process_event (uint32_t setting);
 /* USER CODE BEGIN PFP */
 
@@ -80,6 +80,9 @@ int main(void)
   /* Init RTC */
   RTC_Init();
   
+  /* Init VBAT monitor */
+  VBAT_Init();
+  
   /* Set_Init Time */
   //RTC_SetTime(HOUR_S, MIN_S);
   
@@ -94,10 +97,19 @@ int main(void)
   
   while (1)
   { 
+    
     if(HAL_GetTick() - tick_lcd > 500)
     {
       tick_lcd = HAL_GetTick();  
-      Refresh_Time(mode_setting);
+      
+      if(mode_setting == 3)
+      {
+        Refresh_vbat();
+      }
+      else
+      {
+        Refresh_Time(mode_setting);
+      }
     }
 
     
@@ -126,7 +138,7 @@ int main(void)
         {
           apply_set_ready = 0;
           change_set_ready = 1;
-          if(++mode_setting > 2)
+          if(++mode_setting > 3)
           {
             mode_setting = 0;
           }
@@ -163,7 +175,7 @@ static void process_event (uint32_t setting)
 {
   uint8_t m , h;
   
-  if(setting > 0)
+  if((setting > 0) && (setting < 3))
   {
     RTC_GetTime(&h, &m);
     
@@ -179,6 +191,15 @@ static void process_event (uint32_t setting)
     RTC_SetTime(h, m);  
   }
   
+}
+/**
+  * @brief  Display time
+  * @param  None
+  * @retval None
+  */
+static void Refresh_vbat (void)
+{
+   LCD_PrintNumber(((VBAT_GetVoltage() * 3) * 3300) / 4096);
 }
 /**
   * @brief  Display time
@@ -236,7 +257,7 @@ void SystemClock_Config(void)
   /** Configure LSE Drive Capability
   */
   HAL_PWR_EnableBkUpAccess();
-  __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
+  __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_HIGH);
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
@@ -244,7 +265,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_8;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {

@@ -59,7 +59,7 @@ const signal_t ctl_sig[4] =
   {GPIOA, GPIO_PIN_0},  
   {GPIOA, GPIO_PIN_1},
   {GPIOA, GPIO_PIN_4},
-  {GPIOB, GPIO_PIN_0},
+  {GPIOC, GPIO_PIN_0},
 };
 
 
@@ -253,14 +253,14 @@ void LCD_Init (void)
   }
 
   
-  /* Configure timer @ 5KhZ */
+  /* Configure timer @ 2KhZ */
   __HAL_RCC_TIM3_CLK_ENABLE();
   HAL_NVIC_SetPriority(TIM3_IRQn, 0, 1);
   HAL_NVIC_EnableIRQ(TIM3_IRQn);  
   
-  // 5 KHz
+  // 2 KHz
   TimHandle.Instance = TIM3;
-  TimHandle.Init.Period = 500 - 1;
+  TimHandle.Init.Period = SystemCoreClock/8000 - 1;
   TimHandle.Init.Prescaler = 4 - 1;
   TimHandle.Init.ClockDivision = 0;
   TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -272,6 +272,8 @@ void LCD_Init (void)
   {
       digits.state[pos] = 1;
   }
+  
+
 }
 
 /**
