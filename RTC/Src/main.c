@@ -21,6 +21,7 @@
 #include "main.h"
 #include "lcd.h"   
 #include "rtc.h"  
+#include "button.h"  
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -29,9 +30,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-uint8_t mode_setting = 0, change_set_ready = 1, apply_set_ready = 0;
-uint8_t button_state, last_button_state = 0, debounce_time;
-
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 /* USER CODE END PD */
@@ -43,15 +41,18 @@ uint8_t button_state, last_button_state = 0, debounce_time;
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+  static uint8_t mode_setting = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void Error_Handler(void);
-static void Refresh_Time(uint8_t state);
-static void Refresh_vbat (void);
-static void process_event (uint32_t setting);
+
+static void Refresh_Time  (uint32_t period);
+static void Refresh_vbat  (uint32_t period);
+
+static void process_set (void);
+static void process_mode (void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -67,13 +68,9 @@ static void process_event (uint32_t setting);
   */
 int main(void)
 {
-  uint32_t tick_lcd, tick_button_press, tick_button_unpress;    
-  
   /* Init HAL Library */
   HAL_Init();
-  
-  __HAL_RCC_PWR_CLK_ENABLE();
-  
+   
   /* Configure the system clock to 100 MHz */
   SystemClock_Config();
   
@@ -83,87 +80,32 @@ int main(void)
   /* Init VBAT monitor */
   VBAT_Init();
   
-  /* Set_Init Time */
-  //RTC_SetTime(HOUR_S, MIN_S);
-  
   /* Init LCD*/
   LCD_Init();
   
-  /* Init key user */
-  BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_GPIO);
-  
-  /* get start tick */
-  tick_lcd = HAL_GetTick();    
-  
+  /* Init button */
+  BUTTON_Init(process_mode, process_set);
+
   while (1)
   { 
-    
-    if(HAL_GetTick() - tick_lcd > 500)
-    {
-      tick_lcd = HAL_GetTick();  
-      
-      if(mode_setting == 3)
-      {
-        Refresh_vbat();
-      }
-      else
-      {
-        Refresh_Time(mode_setting);
-      }
-    }
-
-    
-    /* debounce button */ 
-    uint8_t  read = 1 - BSP_PB_GetState(BUTTON_KEY); // invert 1 : press / 0 : unpress
-    
-    if (read != last_button_state)
-    {
-      debounce_time = HAL_GetTick() ;
-      last_button_state = read;
-    }
-    
-    if(HAL_GetTick() - debounce_time > 100)
-    {
-      button_state = read ;
-    }
-
-    /* handle events */
-    if(button_state)
-    {
-      tick_button_unpress = HAL_GetTick();
-      
-      if(change_set_ready == 0)
-      {
-        if(HAL_GetTick() - tick_button_press > 700)
-        {
-          apply_set_ready = 0;
-          change_set_ready = 1;
-          if(++mode_setting > 3)
-          {
-            mode_setting = 0;
-          }
-        }
-        else
-        {
-          apply_set_ready = 1;
-        }
-      }
-    }
-    else
-    {
-      tick_button_press = HAL_GetTick();
-      
-      if(HAL_GetTick() - tick_button_unpress > 100)
-      {           
-        if(apply_set_ready)
-        {
-          process_event(mode_setting);   
-          apply_set_ready = 0; 
-        }
-      }
-      change_set_ready = 0; 
-    }
+    Refresh_vbat(1000);
+    Refresh_Time(500);
+    BUTTON_HandleEvents();
   }
+}
+
+
+/**
+  * @brief  process mode
+  * @param  None
+  * @retval None
+  */
+static void process_mode (void)
+{
+  if(++mode_setting > 3)
+  {
+    mode_setting = 0;
+  }  
 }
 
 /**
@@ -171,19 +113,19 @@ int main(void)
   * @param  None
   * @retval None
   */
-static void process_event (uint32_t setting)
+static void process_set (void)
 {
   uint8_t m , h;
   
-  if((setting > 0) && (setting < 3))
+  if((mode_setting > 0) && (mode_setting < 3))
   {
     RTC_GetTime(&h, &m);
     
-    if(setting == 1)
+    if(mode_setting == 1)
     {
       h = ( h + 1) % 24;
     }
-    else if( setting == 2)
+    else if( mode_setting == 2)
     {
       m = ( m + 1) % 60;
     }
@@ -197,48 +139,65 @@ static void process_event (uint32_t setting)
   * @param  None
   * @retval None
   */
-static void Refresh_vbat (void)
+static void Refresh_vbat (uint32_t period)
 {
-  LCD_ControlDigit(0, 1);
-  LCD_ControlDigit(1, 1);
-  LCD_ControlDigit(2, 1);
-  LCD_ControlDigit(3, 1);
-  LCD_PrintNumber(((VBAT_GetVoltage() * 3) * 3300) / 4096);
+  static uint32_t tick = 0;
+  
+  if((HAL_GetTick() - tick > period) || (!tick))
+  {
+    tick = HAL_GetTick();  
+    
+    if(mode_setting == 3)  
+    {
+      LCD_ControlDigit(0, 1);
+      LCD_ControlDigit(1, 1);
+      LCD_ControlDigit(2, 1);
+      LCD_ControlDigit(3, 1);
+      LCD_PrintNumber(((VBAT_GetVoltage() * 3) * 3300) / 4096);
+    }
+  }
 }
 /**
   * @brief  Display time
   * @param  None
   * @retval None
   */
-static void Refresh_Time (uint8_t state)
+static void Refresh_Time (uint32_t period)
 {
+  static uint32_t tick = 0;
   static uint8_t colon = 0;
   uint8_t m , h;
- 
-  RTC_GetTime(&h, &m);
-  colon = 1- colon;
-  
-  LCD_PrintTime(h, m, 1);    
-  
-  if(state == 1 )//Hour
-  {
-    LCD_ControlDigit(0, colon);
-    LCD_ControlDigit(1, colon);
     
-  }
-  else if(state == 2)
+  if((HAL_GetTick() - tick > period) || (!tick))
   {
-    LCD_ControlDigit(2, colon);
-    LCD_ControlDigit(3, colon);
-  }
-  else
-  {
+    tick = HAL_GetTick();  
+    
+    RTC_GetTime(&h, &m);
+    colon = 1- colon;
+    
     LCD_ControlDigit(0, 1);
     LCD_ControlDigit(1, 1);
     LCD_ControlDigit(2, 1);
     LCD_ControlDigit(3, 1);
+    
+    if(mode_setting == 1 )//Hour
+    {
+      LCD_ControlDigit(0, colon);
+      LCD_ControlDigit(1, colon);
+      LCD_PrintTime(h, m, 0);
+      
+    }
+    else if(mode_setting == 2)
+    {
+      LCD_ControlDigit(2, colon);
+      LCD_ControlDigit(3, colon);
+      LCD_PrintTime(h, m, 0);
+    }
+    else if(mode_setting == 0)
+    {
+      LCD_PrintTime(h, m, colon);    
+    }
   }
-  LCD_PrintTime(h, m, colon);
 }
 
 
@@ -269,7 +228,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_8;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_11;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -284,7 +243,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();
   }

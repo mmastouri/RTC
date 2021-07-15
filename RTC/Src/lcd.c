@@ -167,18 +167,10 @@ void LCD_Update (void)
                         (GPIO_PinState)seg7_table[digits.digit[position]][seg]);
     }
     
-    if(digits.colon )  
-    {
-      HAL_GPIO_WritePin(colon_sig.port, 
-                        colon_sig.pin, 
-                        (GPIO_PinState)0);  
-    }
-    else
-    {
-      HAL_GPIO_WritePin(colon_sig.port, 
-                        colon_sig.pin, 
-                        (GPIO_PinState)1);  
-    }
+    HAL_GPIO_WritePin(colon_sig.port, 
+                      colon_sig.pin, 
+                      (GPIO_PinState)(1-digits.colon));  
+    
     
     HAL_GPIO_WritePin(ctl_sig[position].port, 
                       ctl_sig[position].pin, 

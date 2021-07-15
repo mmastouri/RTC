@@ -113,15 +113,8 @@ void RTC_Init(void)
   */
  void VBAT_Init(void)
 {
-  GPIO_InitTypeDef  GPIO_InitStruct;
+
   ADC_ChannelConfTypeDef sConfig = {0};
-  
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
-  
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);   
   
   __HAL_RCC_ADC_CLK_ENABLE();
   
