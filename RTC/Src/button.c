@@ -41,8 +41,8 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
-static button_cb button_mode_cb;
-static button_cb button_set_cb;
+static button_cb button_long_press_cb;
+static button_cb button_short_press_cb;
 /* Private function prototypes -----------------------------------------------*/
 
 /**
@@ -50,10 +50,10 @@ static button_cb button_set_cb;
   * @param  None
   * @retval None
   */
-void BUTTON_Init (button_cb mode, button_cb set)
+void BUTTON_Init (button_cb long_press, button_cb set)
 {
-  button_mode_cb = mode;
-  button_set_cb = set;
+  button_long_press_cb = long_press;
+  button_short_press_cb = set;
   BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_GPIO);
 }
 /**
@@ -63,7 +63,7 @@ void BUTTON_Init (button_cb mode, button_cb set)
   */
 void BUTTON_HandleEvents (void)
 {
-  static uint8_t change_set_ready = 1, apply_set_ready = 0;
+  static uint8_t change_short_press_ready = 1, apply_short_press_ready = 0;
   static uint8_t button_state = 0, last_button_state = 0, debounce_time = 0;  
   static uint32_t tick_button_press, tick_button_unpress;    
   uint8_t  read;
@@ -86,17 +86,17 @@ void BUTTON_HandleEvents (void)
   {
     tick_button_unpress = HAL_GetTick();
     
-    if(change_set_ready == 0)
+    if(change_short_press_ready == 0)
     {
       if(HAL_GetTick() - tick_button_press > 700)
       {
-        button_mode_cb();
-        apply_set_ready = 0;
-        change_set_ready = 1;        
+        button_long_press_cb();
+        apply_short_press_ready = 0;
+        change_short_press_ready = 1;        
       }
       else
       {
-        apply_set_ready = 1;
+        apply_short_press_ready = 1;
       }
     }
   }
@@ -106,13 +106,13 @@ void BUTTON_HandleEvents (void)
     
     if(HAL_GetTick() - tick_button_unpress > 100)
     {           
-      if(apply_set_ready)
+      if(apply_short_press_ready)
       {
-        button_set_cb();   
-        apply_set_ready = 0; 
+        button_short_press_cb();   
+        apply_short_press_ready = 0; 
       }
     }
-    change_set_ready = 0; 
+    change_short_press_ready = 0; 
   }
 }
 

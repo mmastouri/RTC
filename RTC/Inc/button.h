@@ -46,7 +46,7 @@ typedef void (* button_cb) (void);
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 
-void BUTTON_Init (button_cb mode, button_cb set);
+void BUTTON_Init (button_cb long_press, button_cb set);
 void BUTTON_HandleEvents (void);
 #endif /* __BUTTON_H */
 
