@@ -40,7 +40,9 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-
+static uint8_t change_short_press_ready = 1, apply_short_press_ready = 0;
+static uint8_t button_state = 0, last_button_state = 0, debounce_time = 0;  
+static uint32_t tick_button_press = 0, tick_button_unpress = 0;   
 static button_cb button_long_press_cb;
 static button_cb button_short_press_cb;
 /* Private function prototypes -----------------------------------------------*/
@@ -63,9 +65,7 @@ void BUTTON_Init (button_cb long_press, button_cb set)
   */
 void BUTTON_HandleEvents (void)
 {
-  static uint8_t change_short_press_ready = 1, apply_short_press_ready = 0;
-  static uint8_t button_state = 0, last_button_state = 0, debounce_time = 0;  
-  static uint32_t tick_button_press, tick_button_unpress;    
+
   uint8_t  read;
   
    read = BSP_PB_GetState(BUTTON_KEY); 
@@ -76,7 +76,7 @@ void BUTTON_HandleEvents (void)
     last_button_state = read;
   }
   
-  if(HAL_GetTick() - debounce_time > 100)
+  if(HAL_GetTick() - debounce_time > DEBOUNCE_TIME)
   {
     button_state = read ;
   }
@@ -88,7 +88,7 @@ void BUTTON_HandleEvents (void)
     
     if(change_short_press_ready == 0)
     {
-      if(HAL_GetTick() - tick_button_press > 700)
+      if(HAL_GetTick() - tick_button_press > LONG_PRESS_TIME)
       {
         button_long_press_cb();
         apply_short_press_ready = 0;
@@ -104,7 +104,7 @@ void BUTTON_HandleEvents (void)
   {
     tick_button_press = HAL_GetTick();
     
-    if(HAL_GetTick() - tick_button_unpress > 100)
+    if(HAL_GetTick() - tick_button_unpress > SHORT_PRESS_TIME)
     {           
       if(apply_short_press_ready)
       {

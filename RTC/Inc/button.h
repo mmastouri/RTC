@@ -43,6 +43,9 @@
 /* Exported types ------------------------------------------------------------*/
 typedef void (* button_cb) (void);
 /* Exported constants --------------------------------------------------------*/
+#define LONG_PRESS_TIME     700
+#define SHORT_PRESS_TIME    100
+#define DEBOUNCE_TIME       100
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 
