@@ -41,7 +41,7 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-const signal_t seg7_sig[7]=
+static const signal_t seg7_sig[7]=
 {
  {GPIOC, GPIO_PIN_7},
  {GPIOA, GPIO_PIN_9},  
@@ -52,9 +52,9 @@ const signal_t seg7_sig[7]=
  {GPIOB, GPIO_PIN_3}, 
 };
 
-const signal_t colon_sig = {GPIOA, GPIO_PIN_10};
+static const signal_t colon_sig = {GPIOA, GPIO_PIN_10};
     
-const signal_t ctl_sig[4] = 
+static const signal_t ctl_sig[4] = 
 {
   {GPIOA, GPIO_PIN_0},  
   {GPIOA, GPIO_PIN_1},
@@ -63,7 +63,7 @@ const signal_t ctl_sig[4] =
 };
 
 
-const uint8_t seg7_table[10][7] = 
+static const uint8_t seg7_table[10][7] = 
 {
   {0, 0, 0, 0, 0, 0, 1},  //0
   {1, 0, 0, 1, 1, 1, 1},  //1
@@ -77,7 +77,7 @@ const uint8_t seg7_table[10][7] =
   {0, 0, 0, 0, 1, 0, 0},  //9
 };
 
-const uint8_t seg7_dim[10] = 
+static const uint8_t seg7_dim[10] = 
 {
   6,  //0
   2,  //1
@@ -92,7 +92,7 @@ const uint8_t seg7_dim[10] =
 };
 
 static GPIO_InitTypeDef  GPIO_InitStruct;
-TIM_HandleTypeDef    TimHandle;
+static TIM_HandleTypeDef    TimHandle;
 static digit_t digits;
 void TIM3_IRQHandler(void);
 /* Private function prototypes -----------------------------------------------*/

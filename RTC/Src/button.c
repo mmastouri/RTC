@@ -41,8 +41,8 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
-button_cb button_mode_cb;
-button_cb button_set_cb;
+static button_cb button_mode_cb;
+static button_cb button_set_cb;
 /* Private function prototypes -----------------------------------------------*/
 
 /**

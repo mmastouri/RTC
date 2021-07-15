@@ -41,7 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-  static uint8_t mode_setting = 0;
+static uint8_t mode_setting = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
