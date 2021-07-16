@@ -1,6 +1,6 @@
 # RTC using 4 7-seg LCD
   
-!RTC(pix.jpg)
+!(pix.jpg)
 
 
 # Official version of RTC
