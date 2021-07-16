@@ -11,7 +11,8 @@ the following project use the STM32L476 nucleo 64pins
 
 * RTC with LSE
 * Battery with monitoring in the VBAT
-* allow to set time and VBAT with one Button
+* LCD segments displayed with dimming with homogenous brightness
+* Allow to set time and VBAT with one Button
 
 # Hardware
 
