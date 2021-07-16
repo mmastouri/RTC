@@ -1,6 +1,6 @@
 # RTC using 4 7-seg LCD
   
-!(pix.jpg)
+![RTC](pix.jpg)
 
 
 # Official version of RTC
@@ -11,7 +11,7 @@ the following project use the STM32L476 nucleo 64pins
 
 * RTC with LSE
 * Battery with monitoring in the VBAT
-* allow to set time and display button with one Button
+* allow to set time and VBAT with one Button
 
 # Hardware
 
